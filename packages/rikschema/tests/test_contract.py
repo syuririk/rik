@@ -28,7 +28,7 @@ def _ohlcv(**overrides) -> OHLCVRecord:
     base = dict(
         symbol="KRX:005930",
         timestamp=UTC_NOON,
-        source=SourceId.PYKRX,
+        source=SourceId.FDR,
         asset_class=AssetClass.EQUITY,
         open=100.0,
         high=110.0,
@@ -111,7 +111,7 @@ class TestInstrumentMeta:
             name="Samsung Electronics",
             asset_class=AssetClass.EQUITY,
             currency=Currency.KRW,
-            aliases={SourceId.YFINANCE: "005930.KS", SourceId.PYKRX: "005930"},
+            aliases={SourceId.YFINANCE: "005930.KS", SourceId.FDR: "005930"},
             country="KR",
             exchange="KRX",
         )

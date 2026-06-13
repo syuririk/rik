@@ -29,7 +29,7 @@ SAMSUNG = InstrumentMeta(
     name="Samsung Electronics",
     asset_class=AssetClass.EQUITY,
     currency=Currency.KRW,
-    aliases={SourceId.YFINANCE: "005930.KS", SourceId.PYKRX: "005930"},
+    aliases={SourceId.YFINANCE: "005930.KS", SourceId.FDR: "005930"},
     country="KR",
     exchange="KRX",
 )
@@ -60,7 +60,7 @@ class TestSymbolResolver:
     def test_to_native(self):
         r = _resolver()
         assert r.to_native("KRX:005930", SourceId.YFINANCE) == "005930.KS"
-        assert r.to_native("KRX:005930", SourceId.PYKRX) == "005930"
+        assert r.to_native("KRX:005930", SourceId.FDR) == "005930"
 
     def test_to_canonical(self):
         r = _resolver()
@@ -68,7 +68,7 @@ class TestSymbolResolver:
 
     def test_unknown_symbol_raises(self):
         with pytest.raises(SymbolResolutionError):
-            _resolver().to_native("KRX:000000", SourceId.PYKRX)
+            _resolver().to_native("KRX:000000", SourceId.FDR)
 
     def test_no_alias_for_source_raises(self):
         with pytest.raises(SymbolResolutionError):
@@ -76,7 +76,7 @@ class TestSymbolResolver:
 
     def test_filter_supported(self):
         r = _resolver()
-        got = r.filter_supported(["KRX:005930", "KRX:000000"], SourceId.PYKRX)
+        got = r.filter_supported(["KRX:005930", "KRX:000000"], SourceId.FDR)
         assert got == ["KRX:005930"]
 
 

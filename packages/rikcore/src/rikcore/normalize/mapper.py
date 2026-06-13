@@ -1,7 +1,7 @@
 """Generic field-name mapping helper.
 
-Each source has its own column names (yfinance: 'Open'/'Close', pykrx:
-'시가'/'종가'). A FieldMapper centralizes the rename so adapters stay
+Each source has its own column names (yfinance: 'Open'/'Close', FDR:
+'Open'/'Close'). A FieldMapper centralizes the rename so adapters stay
 declarative.
 """
 

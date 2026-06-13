@@ -61,7 +61,15 @@ class Orchestrator:
 
         merged: list[StandardRecord] = []
         for source in target_sources:
-            raw = source.fetch(symbols, start, end)
+            # Only ask a source for symbols it can actually serve. Without this
+            # a source receives canonical ids it has no alias for (e.g. an
+            # index symbol going to a KR-equities-only source) and the resolver
+            # raises SymbolResolutionError. A source exposing a `resolver` is
+            # filtered via filter_supported; one without is passed all symbols.
+            servable = self._servable_symbols(source, symbols)
+            if not servable:
+                continue
+            raw = source.fetch(servable, start, end)
             records = source.to_standard(raw)
             merged.extend(records)
 
@@ -73,3 +81,17 @@ class Orchestrator:
 
         output = self.emitter.emit(merged)
         return PipelineResult(records=merged, report=report, output=output)
+
+    @staticmethod
+    def _servable_symbols(source: object, symbols: list[str]) -> list[str]:
+        """Subset of `symbols` a source can serve.
+
+        Source adapters built on SourceAdapter carry a `resolver`, which knows
+        which symbols have an alias for that source. If a source exposes no
+        resolver, we can't filter and pass everything through unchanged.
+        """
+        resolver = getattr(source, "resolver", None)
+        source_id = getattr(source, "source_id", None)
+        if resolver is None or source_id is None:
+            return symbols
+        return resolver.filter_supported(symbols, source_id)

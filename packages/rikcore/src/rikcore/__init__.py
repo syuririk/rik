@@ -12,7 +12,7 @@ from rikcore.normalize import SymbolResolver
 from rikcore.pipeline import Orchestrator, PipelineResult
 from rikcore.sources import (
     ManualSource,
-    PyKRXSource,
+    FDRSource,
     SourceRegistry,
     YFinanceSource,
 )
@@ -28,7 +28,7 @@ __all__ = [
     "SymbolResolver",
     "ManualSource",
     "YFinanceSource",
-    "PyKRXSource",
+    "FDRSource",
     "RecordsEmitter",
     "DictEmitter",
     "DataFrameEmitter",

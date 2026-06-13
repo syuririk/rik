@@ -1,8 +1,14 @@
-"""yfinance source adapter.
+"""FinanceDataReader source adapter (KR equities, indices, ETFs).
 
-Imports yfinance lazily inside fetch() so the rest of rikcore (and its tests)
-load without the dependency present. The to_standard transform is pure and
-network-free, so it can be tested against recorded fixtures.
+Replaces the old pykrx adapter. As of early 2026 the KRX site changes broke
+pykrx (auth required, many endpoints 404); FinanceDataReader scrapes from
+working endpoints and needs no credentials.
+
+`fdr.DataReader(symbol, start, end)` returns a DataFrame with a DatetimeIndex
+named "Date" and plain English columns (Open/High/Low/Close/[Adj Close]/
+Volume) — the same shape as yfinance after flattening, so the transform is
+straightforward. fdr is lazy-imported in fetch() so the rest of rikcore loads
+without the dependency.
 """
 
 from __future__ import annotations
@@ -23,54 +29,31 @@ from rikschema import (
 from rikcore.normalize import SymbolResolver, to_kst_midnight
 from rikcore.sources.base import SourceAdapter
 
-# yfinance column -> standard field
-_COLUMN_MAP = {
-    "Open": "open",
-    "High": "high",
-    "Low": "low",
-    "Close": "close",
-    "Volume": "volume",
-}
 
+class FDRSource(SourceAdapter):
+    """Fetches daily bars from FinanceDataReader."""
 
-class YFinanceSource(SourceAdapter):
-    """Fetches daily bars from Yahoo Finance via yfinance."""
-
-    source_id = SourceId.YFINANCE
+    source_id = SourceId.FDR
 
     def fetch(self, symbols: list[str], start: date, end: date) -> dict[str, Any]:
         try:
-            import yfinance as yf
+            import FinanceDataReader as fdr
         except ImportError as exc:  # pragma: no cover
             raise FetchError(
-                "yfinance not installed", source_id=self.source_id.value
+                "FinanceDataReader not installed (pip install finance-datareader)",
+                source_id=self.source_id.value,
             ) from exc
 
         out: dict[str, Any] = {}
         for canonical in symbols:
             native = self.resolver.to_native(canonical, self.source_id)
             try:
-                df = yf.download(
-                    native,
-                    start=start,
-                    end=end,
-                    progress=False,
-                    auto_adjust=False,
-                    # Recent yfinance returns MultiIndex columns even for a
-                    # single ticker; force flat columns so "Date"/"Open"/... stay
-                    # plain string keys after reset_index().
-                    multi_level_index=False,
-                )
-            except TypeError:
-                # Older yfinance without the multi_level_index kwarg.
-                df = yf.download(
-                    native, start=start, end=end, progress=False, auto_adjust=False
-                )
+                df = fdr.DataReader(native, start, end)
             except Exception as exc:  # pragma: no cover - network
                 raise FetchError(
-                    f"download failed for {native}", source_id=self.source_id.value
+                    f"DataReader failed for {native}",
+                    source_id=self.source_id.value,
                 ) from exc
-            # carry canonical id + native rows forward to the pure transform
             out[canonical] = {
                 "native": native,
                 "records": self._frame_to_rows(df),
@@ -79,36 +62,32 @@ class YFinanceSource(SourceAdapter):
 
     @staticmethod
     def _frame_to_rows(df: Any) -> list[dict[str, Any]]:
-        """Flatten any residual MultiIndex columns, then emit row dicts.
-
-        Defensive: even with multi_level_index=False, a MultiIndex can slip
-        through on some versions / multi-ticker paths. Collapsing to the first
-        level (the price field name) keeps keys like "Open"/"Close" usable.
-        """
+        """DataFrame -> row dicts. FDR uses a DatetimeIndex named 'Date'."""
         if df is None or len(df) == 0:
             return []
-        import pandas as pd
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df = df.copy()
-            df.columns = df.columns.get_level_values(0)
         return df.reset_index().to_dict("records")
 
     def to_standard(self, raw: dict[str, Any]) -> list[StandardRecord]:
         records: list[StandardRecord] = []
         for canonical, payload in raw.items():
             asset_class = self._infer_asset_class(canonical)
+            currency = self._infer_currency(canonical)
             for row in payload["records"]:
-                records.append(self._row_to_record(canonical, asset_class, row))
+                records.append(
+                    self._row_to_record(canonical, asset_class, currency, row)
+                )
         return records
 
     def _row_to_record(
-        self, symbol: str, asset_class: AssetClass, row: dict[str, Any]
+        self,
+        symbol: str,
+        asset_class: AssetClass,
+        currency: Currency,
+        row: dict[str, Any],
     ) -> OHLCVRecord:
         ts = (
             row.get("Date")
-            or row.get("Datetime")
-            or row.get("index")  # reset_index() on an unnamed datetime index
+            or row.get("index")  # reset_index() on an unnamed index, just in case
         )
         if ts is None:
             raise NormalizationError(
@@ -126,11 +105,13 @@ class YFinanceSource(SourceAdapter):
                 low=float(row["Low"]),
                 close=float(row["Close"]),
                 volume=float(row.get("Volume", 0) or 0),
-                currency=self._infer_currency(symbol),
+                currency=currency,
                 adjusted=False,
             )
         except KeyError as exc:
-            raise NormalizationError("missing OHLC column", field=str(exc)) from exc
+            raise NormalizationError(
+                f"missing OHLC column {exc}", field=str(exc)
+            ) from exc
 
     @staticmethod
     def _infer_asset_class(symbol: str) -> AssetClass:
@@ -142,8 +123,7 @@ class YFinanceSource(SourceAdapter):
 
     @staticmethod
     def _infer_currency(symbol: str) -> Currency:
-        if symbol.startswith(("KRX:", "INDEX:KOSPI", "INDEX:KOSDAQ")):
-            return Currency.KRW
+        # FDR KR indices (KS11/KQ11) are unit-less; KR equities/ETFs are KRW.
         if symbol.startswith("INDEX:"):
             return Currency.NONE
-        return Currency.USD
+        return Currency.KRW

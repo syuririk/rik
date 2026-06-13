@@ -8,7 +8,7 @@ pipeline:
 sources:
   yfinance:
     enabled: true
-  pykrx:
+  fdr:
     enabled: true
   oecd:
     enabled: false

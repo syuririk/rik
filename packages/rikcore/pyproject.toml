@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-sources = ["yfinance>=0.2", "pykrx>=1.0", "requests>=2.31"]
+sources = ["yfinance>=0.2", "finance-datareader>=0.9", "requests>=2.31"]
 pandas = ["pandas>=2"]
 test = ["pytest>=8"]
 

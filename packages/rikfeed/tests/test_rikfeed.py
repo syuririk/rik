@@ -18,7 +18,7 @@ SAMSUNG = InstrumentMeta(
     name="Samsung Electronics",
     asset_class=AssetClass.EQUITY,
     currency=Currency.KRW,
-    aliases={SourceId.PYKRX: "005930"},
+    aliases={SourceId.FDR: "005930"},
 )
 
 

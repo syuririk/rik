@@ -6,7 +6,7 @@ let rikcore's symbol_resolver map any source's native ticker to the single
 canonical `symbol`.
 
 This is the record type that makes multi-source merging possible: when
-yfinance says "005930.KS" and pykrx says "005930", both resolve to the one
+yfinance says "005930.KS" and FDR says "005930", both resolve to the one
 canonical symbol declared here.
 """
 

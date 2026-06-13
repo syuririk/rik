@@ -12,7 +12,7 @@ from enum import StrEnum
 
 class SourceId(StrEnum):
     YFINANCE = "yfinance"
-    PYKRX = "pykrx"
+    FDR = "fdr"  # FinanceDataReader (KR equities, indices, ETFs)
     DART = "dart"
     OECD = "oecd"
     MANUAL = "manual"  # hand-entered / overrides

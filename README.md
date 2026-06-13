@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # rik
 
 Standardized multi-source market-data pipeline, organized as a uv workspace
@@ -79,3 +80,6 @@ rik/
 ## License
 
 MIT — see [LICENSE](LICENSE).
+=======
+# rik
+>>>>>>> 6a747916a2abbcd97e37162a146ee8e444f15d6a

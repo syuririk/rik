@@ -1,0 +1,46 @@
+[project]
+name = "rik"
+version = "0.1.0"
+description = "rik monorepo: standardized multi-source market data pipeline."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "syuririk" }]
+
+# The root is a virtual workspace; it has no importable package of its own.
+# Real packages live under packages/*.
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+rikschema = { workspace = true }
+rikcore = { workspace = true }
+rikfeed = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["packages/rikschema/src", "packages/rikcore/src", "packages/rikfeed/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "packages/rikschema/tests",
+    "packages/rikcore/tests",
+    "packages/rikfeed/tests",
+]

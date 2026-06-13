@@ -1,0 +1,19 @@
+# rikcore canonical defaults.
+# Override by passing a path to load_config().
+
+pipeline:
+  strict: false          # raise on validation failure if true
+  default_emitter: records  # records | dict | dataframe
+
+sources:
+  yfinance:
+    enabled: true
+  pykrx:
+    enabled: true
+  oecd:
+    enabled: false
+
+# Instrument universe is loaded separately (see sources.yaml / a metadata
+# store). Listed here are pipeline-level knobs only.
+calendar:
+  timezone: Asia/Seoul

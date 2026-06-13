@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      schema: ${{ steps.filter.outputs.schema }}
+      core: ${{ steps.filter.outputs.core }}
+      feed: ${{ steps.filter.outputs.feed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            schema:
+              - 'packages/rikschema/**'
+            core:
+              - 'packages/rikcore/**'
+              - 'packages/rikschema/**'
+            feed:
+              - 'packages/rikfeed/**'
+              - 'packages/rikcore/**'
+              - 'packages/rikschema/**'
+
+  test:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: Sync workspace
+        run: uv sync --all-extras
+      - name: Lint
+        run: uv run ruff check .
+      - name: Type check
+        run: uv run mypy packages/rikschema/src
+      - name: Test rikschema
+        if: needs.detect.outputs.schema == 'true'
+        run: uv run pytest packages/rikschema/tests -q
+      - name: Test rikcore
+        if: needs.detect.outputs.core == 'true'
+        run: uv run pytest packages/rikcore/tests -q
+      - name: Test rikfeed
+        if: needs.detect.outputs.feed == 'true'
+        run: uv run pytest packages/rikfeed/tests -q

@@ -1,0 +1,28 @@
+[project]
+name = "rikcore"
+version = "0.1.0"
+description = "Multi-source market data collection and standardization for the rik ecosystem."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "syuririk" }]
+dependencies = [
+    "rikschema",
+    "pydantic>=2.6",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+sources = ["yfinance>=0.2", "pykrx>=1.0", "requests>=2.31"]
+pandas = ["pandas>=2"]
+test = ["pytest>=8"]
+
+[tool.uv.sources]
+rikschema = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rikcore"]
